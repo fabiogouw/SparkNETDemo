@@ -1,6 +1,7 @@
 ﻿using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Types;
 using System;
+using System.Collections.Generic;
 
 namespace BatchDemo
 {
@@ -8,14 +9,23 @@ namespace BatchDemo
     {
         static void Main(string[] args)
         {
-            if(args.Length == 0)
+            /*
+             * Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
+             * Rodar o comando abaixo a partir da pasta inicial deste projeto:
+             *   spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
+                 --master local \
+                 bin\Debug\netcoreapp3.1\microsoft-spark-2.3.x-0.9.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
+                 data\amostra.csv \
+                 jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
+             */
+
+            if (args.Length == 0)
             {
                 Console.WriteLine("Informar os caminhos onde encontrar os arquivos CSV", ConsoleColor.Red);
                 return;
             }
 
             string input = args[0];
-            string output = args.Length >= 2 ? args[1] : string.Empty;
 
             // Obtém a referência ao contexto de execução do Spark
             SparkSession spark = SparkSession
@@ -64,25 +74,40 @@ namespace BatchDemo
             spark.Sql("SELECT NOME, MUNICIPIO, VALOR FROM filtrados WHERE UF = 'SP' AND VALOR >= 200")
                 .Show(10, 100);
 
-            // Efetuando uma agregação
-            DataFrame summary = df.GroupBy("DATA_SAQUE")
-                .Sum("VALOR")
-                .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS_DIA")
-                .OrderBy(Functions.Col("DATA_SAQUE").Asc());
-            summary.Show(100);
+            // Criando uma nova coluna a partir de uma concatenação, e removendo as antigas
+            df = df.WithColumn("CIDADE", Functions.Concat(df.Col("UF"), Functions.Lit(" - "), df.Col("MUNICIPIO")))
+                .Drop("UF")
+                .Drop("CODIGO_MUNICIPIO")
+                .Drop("MUNICIPIO");
+            df.PrintSchema();
+            df.Show(10, 100);
 
-            // Salvando os resultados em disco
-            if(!string.IsNullOrEmpty(output))
+            // Efetuando uma agregação
+            DataFrame summary = df.GroupBy("CIDADE")
+                .Sum("VALOR")
+                .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS")
+                .OrderBy(Functions.Col("SOMA_BENEFICIOS").Desc());
+            summary.PrintSchema();
+            summary.Show(15, 100);
+
+            if(args.Length >= 2)
             {
+                string urlJdbc = args[1];   // jdbc:mysql://localhost:3306/db_streaming
+                string tabela = args[2];    // beneficios
+                string usuario = args[3];   // spark_user
+                string senha = args[4];     // my-secret-password
+
+                var propriedades = new Dictionary<string, string>()
+                {
+                    { "user", usuario },
+                    { "password", senha }
+                };
                 summary
-                    .Coalesce(1)
                     .Write()
                     .Mode(SaveMode.Overwrite)
-                    .Option("header", true)
-                    .Format("csv")
-                    .Save(output);
+                    .Option("driver", "com.mysql.cj.jdbc.Driver")
+                    .Jdbc(urlJdbc, tabela, propriedades);
             }
-
             spark.Stop();
         }
     }
