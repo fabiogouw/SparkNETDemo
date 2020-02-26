@@ -14,7 +14,7 @@ namespace BatchDemo
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
              *   spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
                  --master local \
-                 bin\Debug\netcoreapp3.1\microsoft-spark-2.3.x-0.9.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
+                 bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.9.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
                  data\amostra.csv \
                  jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
              */
@@ -57,6 +57,8 @@ namespace BatchDemo
                 .Option("dateFormat", "dd/MM/yyyy")
                 .Load(input);
 
+
+
             // Convertendo a coluna VALOR de string para decimal, considerando que o padrão brasileiro é diferente do americano
             df = df.WithColumn("VALOR", Functions.RegexpReplace(
                                             Functions.RegexpReplace(Functions.Col("VALOR"), "\\.", "")
@@ -90,7 +92,7 @@ namespace BatchDemo
             summary.PrintSchema();
             summary.Show(15, 100);
 
-            if(args.Length >= 2)
+            if (args.Length >= 2)
             {
                 string urlJdbc = args[1];   // jdbc:mysql://localhost:3306/db_streaming
                 string tabela = args[2];    // beneficios
