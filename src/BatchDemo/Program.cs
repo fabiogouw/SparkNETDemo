@@ -12,7 +12,7 @@ namespace BatchDemo
             /*
              * Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
-             *   spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
+             *   %SPARK_HOME%\bin\spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
                  --master local \
                  bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.9.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
                  data\amostra.csv \
@@ -25,7 +25,7 @@ namespace BatchDemo
                 return;
             }
 
-            string input = args[0];
+            string arquivoEntrada = args[0];
 
             // Obtém a referência ao contexto de execução do Spark
             SparkSession spark = SparkSession
@@ -55,7 +55,7 @@ namespace BatchDemo
                 .Option("delimiter", ";")
                 .Option("header", true)
                 .Option("dateFormat", "dd/MM/yyyy")
-                .Load(input);
+                .Load(arquivoEntrada);
 
 
 
@@ -85,12 +85,12 @@ namespace BatchDemo
             df.Show(10, 100);
 
             // Efetuando uma agregação
-            DataFrame summary = df.GroupBy("CIDADE")
+            DataFrame somatorio = df.GroupBy("CIDADE")
                 .Sum("VALOR")
                 .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS")
                 .OrderBy(Functions.Col("SOMA_BENEFICIOS").Desc());
-            summary.PrintSchema();
-            summary.Show(15, 100);
+            somatorio.PrintSchema();
+            somatorio.Show(15, 100);
 
             if (args.Length >= 2)
             {
@@ -104,7 +104,8 @@ namespace BatchDemo
                     { "user", usuario },
                     { "password", senha }
                 };
-                summary
+                // Salvando em banco de dados com funcionalidade nativa do Spark
+                somatorio
                     .Write()
                     .Mode(SaveMode.Overwrite)
                     .Option("driver", "com.mysql.cj.jdbc.Driver")
