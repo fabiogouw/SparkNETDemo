@@ -11,7 +11,7 @@ namespace StreamingDemo
         /* Copiar jars para a pasta do Hadoop spark-sql-kafka-0-10_2.11-2.4.5.jar e kafka-clients-2.4.0.jar
          * ou --packages org.apache.spark:spark-sql-kafka-0-10_2.12:2.4.5
          * %SPARK_HOME%\bin\spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
-         * --master local bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.9.0.jar dotnet bin\Debug\netcoreapp3.1\StreamingDemo.dll \
+         * --master local bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar dotnet bin\Debug\netcoreapp3.1\StreamingDemo.dll \
          * localhost:9092 test data\MLModel.zip
          */
         static void Main(string[] args)

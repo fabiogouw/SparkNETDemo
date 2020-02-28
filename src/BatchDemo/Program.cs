@@ -14,15 +14,14 @@ namespace BatchDemo
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
              *   %SPARK_HOME%\bin\spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
                  --master local \
-                 bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.9.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
+                 bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
                  data\amostra.csv \
                  jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
              */
 
             if (args.Length == 0)
             {
-                Console.WriteLine("Informar os caminhos onde encontrar os arquivos CSV", ConsoleColor.Red);
-                return;
+                throw new ArgumentException("Informar os caminhos onde encontrar os arquivos CSV");
             }
 
             string arquivoEntrada = args[0];
@@ -57,8 +56,6 @@ namespace BatchDemo
                 .Option("dateFormat", "dd/MM/yyyy")
                 .Load(arquivoEntrada);
 
-
-
             // Convertendo a coluna VALOR de string para decimal, considerando que o padrão brasileiro é diferente do americano
             df = df.WithColumn("VALOR", Functions.RegexpReplace(
                                             Functions.RegexpReplace(Functions.Col("VALOR"), "\\.", "")
@@ -76,9 +73,51 @@ namespace BatchDemo
             spark.Sql("SELECT NOME, MUNICIPIO, VALOR FROM filtrados WHERE UF = 'SP' AND VALOR >= 200")
                 .Show(10, 100);
 
+            // Criando um novo dataframe na mão
+            StructType schemaEstados = new StructType(new[]
+            {
+                new StructField("UF", new StringType()),
+                new StructField("NOME_UF", new StringType())
+            });
+            DataFrame estados = spark.CreateDataFrame(new[]
+            {
+                new GenericRow(new object[] { "AC", "ACRE" }),
+                new GenericRow(new object[] { "AL", "ALAGOAS" }),
+                new GenericRow(new object[] { "AP", "AMAPA" }),
+                new GenericRow(new object[] { "AM", "AMAZONAS" }),
+                new GenericRow(new object[] { "BA", "BAHIA" }),
+                new GenericRow(new object[] { "CE", "CEARA" }),
+                new GenericRow(new object[] { "DF", "DISTRITO FEDERAL" }),
+                new GenericRow(new object[] { "ES", "ESPÍRITO SANTO" }),
+                new GenericRow(new object[] { "GO", "GOIAS" }),
+                new GenericRow(new object[] { "MA", "MARANHAO" }),
+                new GenericRow(new object[] { "MT", "MATO GROSSO" }),
+                new GenericRow(new object[] { "MS", "MATO GROSSO DO SUL" }),
+                new GenericRow(new object[] { "MG", "MINAS GERAIS" }),
+                new GenericRow(new object[] { "PA", "PARA" }),
+                new GenericRow(new object[] { "PB", "PARAÍBA" }),
+                new GenericRow(new object[] { "PR", "PARANA" }),
+                new GenericRow(new object[] { "PE", "PERNAMBUCO" }),
+                new GenericRow(new object[] { "PI", "PIAUI" }),
+                new GenericRow(new object[] { "RJ", "RIO DE JANEIRO" }),
+                new GenericRow(new object[] { "RN", "RIO GRANDE DO NORTE" }),
+                new GenericRow(new object[] { "RS", "RIO GRANDE DO SUL" }),
+                new GenericRow(new object[] { "RO", "RONDÔNIA" }),
+                new GenericRow(new object[] { "RR", "RORAIMA" }),
+                new GenericRow(new object[] { "SC", "SANTA CATARINA" }),
+                new GenericRow(new object[] { "SP", "SAO PAULO" }),
+                new GenericRow(new object[] { "SE", "SERGIPE" }),
+                new GenericRow(new object[] { "TO", "TOCANTINS" })
+            }, schemaEstados);
+            // Efetuando o join em cima da coluna UF, que é a chave dos dois dataframes
+            df = df.Join(estados, "UF");
+            df.PrintSchema();
+            df.Show(10, 100);
+
             // Criando uma nova coluna a partir de uma concatenação, e removendo as antigas
-            df = df.WithColumn("CIDADE", Functions.Concat(df.Col("UF"), Functions.Lit(" - "), df.Col("MUNICIPIO")))
+            df = df.WithColumn("CIDADE", Functions.Concat(df.Col("NOME_UF"), Functions.Lit(" - "), df.Col("MUNICIPIO")))
                 .Drop("UF")
+                .Drop("NOME_UF")
                 .Drop("CODIGO_MUNICIPIO")
                 .Drop("MUNICIPIO");
             df.PrintSchema();
