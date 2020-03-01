@@ -13,10 +13,10 @@ namespace BatchDemo
              * Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
              *   %SPARK_HOME%\bin\spark-submit
-             *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
              *   --master local 
-             *   bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar
-             *   dotnet
+             *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
+             *   bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar 
+             *   dotnet 
              *   bin\Debug\netcoreapp3.1\BatchDemo.dll 
              *   data\amostra.csv 
              *   jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
@@ -58,6 +58,15 @@ namespace BatchDemo
                 .Option("header", true)
                 .Option("dateFormat", "dd/MM/yyyy")
                 .Load(arquivoEntrada);
+            df.PrintSchema();
+            df.Show(5, 10);
+
+            // Removendo colunas antigas e que não precisamos mais
+            df = df.Drop("MES_REFERENCIA")
+                .Drop("MES_COMPETENCIA")
+                .Drop("CODIGO_MUNICIPIO")
+                .Drop("CODIGO_FAVORECIDO");
+            df.Show(5, 10);
 
             // Convertendo a coluna VALOR de string para decimal, considerando que o padrão brasileiro é diferente do americano
             df = df.WithColumn("VALOR", Functions.RegexpReplace(
@@ -67,17 +76,17 @@ namespace BatchDemo
                                         , ",", ".")
                                     .Cast("decimal(10,2)"));
             df.PrintSchema();
-            df.Show(10, 10);
+            df.Show(5, 10);
 
             // Efetuando um filtro em cima dos dados
             df = df.Where(Functions.Col("UF").NotEqual("AC"));
             //df = df.Where("UF <> 'AC'");  // passar uma expressão WHERE também funciona como filtro
-            df.Show(10, 10);
+            df.Show(5, 10);
 
             // Executando uma "query SQL" em cima dos dados 
             df.CreateOrReplaceTempView("filtrados");
             spark.Sql("SELECT NOME, MUNICIPIO, VALOR FROM filtrados WHERE UF = 'SP' AND VALOR >= 200")
-                .Show(10, 20);
+                .Show(5, 20);
 
             // Criando um novo dataframe na mão
             StructType schemaEstados = new StructType(new[]
@@ -117,28 +126,24 @@ namespace BatchDemo
             }, schemaEstados);
             // Efetuando o join em cima da coluna UF, que é a chave dos dois dataframes
             df = df.Join(estados, "UF");
-            df.PrintSchema();
-            df.Show(10, 15);
+            df.Show(5, 15);
 
-            // Criando uma nova coluna a partir de uma concatenação, e removendo as antigas
-            df = df.WithColumn("LOCAL", Functions.Concat(
-                                            df.Col("UF"), 
-                                            Functions.Lit(" - "), 
+            // Criando uma nova coluna a partir de uma concatenação e removendo colunas antigas e que não precisamos mais
+            df = df.WithColumn("CIDADE", Functions.Concat(
+                                            df.Col("NOME_UF"),
+                                            Functions.Lit(" - "),
                                             df.Col("MUNICIPIO"))
                                         )
                 .Drop("UF")
                 .Drop("NOME_UF")
-                .Drop("CODIGO_MUNICIPIO")
                 .Drop("MUNICIPIO");
-            df.PrintSchema();
-            df.Show(10, 15);
+            df.Show(10, 40);
 
             // Efetuando uma agregação
-            DataFrame somatorio = df.GroupBy("LOCAL")
+            DataFrame somatorio = df.GroupBy("CIDADE")
                 .Sum("VALOR")
                 .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS")
                 .OrderBy(Functions.Col("SOMA_BENEFICIOS").Desc());
-            somatorio.PrintSchema();
             somatorio.Show(15, 40);
 
             if (args.Length >= 2)
