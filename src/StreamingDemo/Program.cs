@@ -10,7 +10,7 @@ namespace StreamingDemo
     {
         /* Copiar jars para a pasta do Hadoop spark-sql-kafka-0-10_2.11-2.4.5.jar e kafka-clients-2.4.0.jar
          * ou --packages org.apache.spark:spark-sql-kafka-0-10_2.12:2.4.5
-         * %SPARK_HOME%\bin\spark-submit
+         * %SPARK_HOME%\bin\spark-submit 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
          * bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar 
@@ -31,17 +31,12 @@ namespace StreamingDemo
                 .AppName("Exemplo Streaming com Kafka")
                 .GetOrCreate();
 
-            //Registrando uma função personalizada pra ser usada no dataframe
-            spark.Udf().Register<string, float>("AnaliseDeSentimento",
-                (texto) => AnalisarSentimento(texto, modelo));
-
             // Criando um dataframe pra receber dados do Kafka
             DataFrame df = spark
                 .ReadStream()
                 .Format("kafka")
                 .Option("kafka.bootstrap.servers", servidoresKafka)
                 .Option("subscribe", topico)
-                .Option("encoding", "UTF-8")
                 .Load()
                 .SelectExpr("CAST(value AS STRING)");
 
@@ -66,6 +61,10 @@ namespace StreamingDemo
                                             schema.SimpleString)
                                         )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
+
+            //Registrando uma função personalizada pra ser usada no dataframe
+            spark.Udf().Register<string, float>("AnaliseDeSentimento",
+                (texto) => AnalisarSentimento(texto, modelo));
             // Criando nova coluna nota com o resultado da análise de sentimento
             df = df.WithColumn("nota", Functions.CallUDF("AnaliseDeSentimento", df.Col("opiniao")));
 
@@ -94,7 +93,6 @@ namespace StreamingDemo
         {
             [ColumnName("Avaliacao"), LoadColumn(0)]
             public string TextoAvaliacao { get; set; }
-
 
             [ColumnName("Sentimento"), LoadColumn(1)]
             public bool Sentimento { get; set; }

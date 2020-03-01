@@ -12,7 +12,7 @@ namespace BatchDemo
             /*
              * Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
-             *   %SPARK_HOME%\bin\spark-submit
+             *   %SPARK_HOME%\bin\spark-submit 
              *   --master local 
              *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
              *   bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar 
@@ -46,7 +46,7 @@ namespace BatchDemo
                 new StructField("CODIGO_FAVORECIDO", new StringType()),
                 new StructField("NOME", new StringType()),
                 new StructField("DATA_SAQUE", new DateType()),
-                new StructField("VALOR", new StringType())
+                new StructField("VALOR_TEXTO", new StringType())
             });
 
             // Leitura dos dados em disco para dentro do Spark
@@ -61,7 +61,7 @@ namespace BatchDemo
             df.PrintSchema();
             df.Show(5, 10);
 
-            // Removendo colunas antigas e que não precisamos mais
+            // Removendo colunas que não precisamos mais
             df = df.Drop("MES_REFERENCIA")
                 .Drop("MES_COMPETENCIA")
                 .Drop("CODIGO_MUNICIPIO")
@@ -71,80 +71,35 @@ namespace BatchDemo
             // Convertendo a coluna VALOR de string para decimal, considerando que o padrão brasileiro é diferente do americano
             df = df.WithColumn("VALOR", Functions.RegexpReplace(
                                             Functions.RegexpReplace(
-                                                Functions.Col("VALOR")
+                                                df.Col("VALOR_TEXTO")
                                             , "\\.", "")
                                         , ",", ".")
-                                    .Cast("decimal(10,2)"));
+                                    .Cast("decimal(10,2)"))
+                .Drop("VALOR_TEXTO");
             df.PrintSchema();
             df.Show(5, 10);
 
             // Efetuando um filtro em cima dos dados
-            df = df.Where(Functions.Col("UF").NotEqual("AC"));
+            df = df.Where(df.Col("UF").NotEqual("AC"));
             //df = df.Where("UF <> 'AC'");  // passar uma expressão WHERE também funciona como filtro
             df.Show(5, 10);
 
-            // Executando uma "query SQL" em cima dos dados 
-            df.CreateOrReplaceTempView("filtrados");
-            spark.Sql("SELECT NOME, MUNICIPIO, VALOR FROM filtrados WHERE UF = 'SP' AND VALOR >= 200")
-                .Show(5, 20);
-
-            // Criando um novo dataframe na mão
-            StructType schemaEstados = new StructType(new[]
-            {
-                new StructField("UF", new StringType()),
-                new StructField("NOME_UF", new StringType())
-            });
-            DataFrame estados = spark.CreateDataFrame(new[]
-            {
-                new GenericRow(new object[] { "AC", "ACRE" }),
-                new GenericRow(new object[] { "AL", "ALAGOAS" }),
-                new GenericRow(new object[] { "AP", "AMAPA" }),
-                new GenericRow(new object[] { "AM", "AMAZONAS" }),
-                new GenericRow(new object[] { "BA", "BAHIA" }),
-                new GenericRow(new object[] { "CE", "CEARA" }),
-                new GenericRow(new object[] { "DF", "DISTRITO FEDERAL" }),
-                new GenericRow(new object[] { "ES", "ESPÍRITO SANTO" }),
-                new GenericRow(new object[] { "GO", "GOIAS" }),
-                new GenericRow(new object[] { "MA", "MARANHAO" }),
-                new GenericRow(new object[] { "MT", "MATO GROSSO" }),
-                new GenericRow(new object[] { "MS", "MATO GROSSO DO SUL" }),
-                new GenericRow(new object[] { "MG", "MINAS GERAIS" }),
-                new GenericRow(new object[] { "PA", "PARA" }),
-                new GenericRow(new object[] { "PB", "PARAÍBA" }),
-                new GenericRow(new object[] { "PR", "PARANA" }),
-                new GenericRow(new object[] { "PE", "PERNAMBUCO" }),
-                new GenericRow(new object[] { "PI", "PIAUI" }),
-                new GenericRow(new object[] { "RJ", "RIO DE JANEIRO" }),
-                new GenericRow(new object[] { "RN", "RIO GRANDE DO NORTE" }),
-                new GenericRow(new object[] { "RS", "RIO GRANDE DO SUL" }),
-                new GenericRow(new object[] { "RO", "RONDÔNIA" }),
-                new GenericRow(new object[] { "RR", "RORAIMA" }),
-                new GenericRow(new object[] { "SC", "SANTA CATARINA" }),
-                new GenericRow(new object[] { "SP", "SAO PAULO" }),
-                new GenericRow(new object[] { "SE", "SERGIPE" }),
-                new GenericRow(new object[] { "TO", "TOCANTINS" })
-            }, schemaEstados);
-            // Efetuando o join em cima da coluna UF, que é a chave dos dois dataframes
-            df = df.Join(estados, "UF");
-            df.Show(5, 15);
-
             // Criando uma nova coluna a partir de uma concatenação e removendo colunas antigas e que não precisamos mais
-            df = df.WithColumn("CIDADE", Functions.Concat(
-                                            df.Col("NOME_UF"),
+            df = df.WithColumn("MUNICIPIO", Functions.Concat(
+                                            df.Col("UF"),
                                             Functions.Lit(" - "),
                                             df.Col("MUNICIPIO"))
                                         )
-                .Drop("UF")
-                .Drop("NOME_UF")
-                .Drop("MUNICIPIO");
-            df.Show(10, 40);
+                .Drop("UF");
+            df.Show(10, 15);
 
             // Efetuando uma agregação
-            DataFrame somatorio = df.GroupBy("CIDADE")
+            DataFrame somatorio = df.GroupBy("MUNICIPIO")
                 .Sum("VALOR")
-                .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS")
-                .OrderBy(Functions.Col("SOMA_BENEFICIOS").Desc());
-            somatorio.Show(15, 40);
+                .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS");
+            somatorio
+                .OrderBy(somatorio.Col("SOMA_BENEFICIOS").Desc())
+                .Show(15, 40);
 
             if (args.Length >= 2)
             {
