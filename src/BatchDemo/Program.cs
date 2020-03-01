@@ -12,11 +12,14 @@ namespace BatchDemo
             /*
              * Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
-             *   %SPARK_HOME%\bin\spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
-                 --master local \
-                 bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar dotnet bin\Debug\netcoreapp3.1\BatchDemo.dll \
-                 data\amostra.csv \
-                 jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
+             *   %SPARK_HOME%\bin\spark-submit
+             *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
+             *   --master local 
+             *   bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar
+             *   dotnet
+             *   bin\Debug\netcoreapp3.1\BatchDemo.dll 
+             *   data\amostra.csv 
+             *   jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
              */
 
             if (args.Length == 0)
@@ -51,27 +54,30 @@ namespace BatchDemo
                 .Format("csv")
                 .Schema(schema)
                 //.Option("inferSchema", true)
-                .Option("delimiter", ";")
+                .Option("sep", ";")
                 .Option("header", true)
                 .Option("dateFormat", "dd/MM/yyyy")
                 .Load(arquivoEntrada);
 
             // Convertendo a coluna VALOR de string para decimal, considerando que o padrão brasileiro é diferente do americano
             df = df.WithColumn("VALOR", Functions.RegexpReplace(
-                                            Functions.RegexpReplace(Functions.Col("VALOR"), "\\.", "")
-                                            , ",", ".").Cast("decimal(10,2)"));
+                                            Functions.RegexpReplace(
+                                                Functions.Col("VALOR")
+                                            , "\\.", "")
+                                        , ",", ".")
+                                    .Cast("decimal(10,2)"));
             df.PrintSchema();
-            df.Show(10, 100);
+            df.Show(10, 10);
 
             // Efetuando um filtro em cima dos dados
             df = df.Where(Functions.Col("UF").NotEqual("AC"));
             //df = df.Where("UF <> 'AC'");  // passar uma expressão WHERE também funciona como filtro
-            df.Show(10, 100);
+            df.Show(10, 10);
 
             // Executando uma "query SQL" em cima dos dados 
             df.CreateOrReplaceTempView("filtrados");
             spark.Sql("SELECT NOME, MUNICIPIO, VALOR FROM filtrados WHERE UF = 'SP' AND VALOR >= 200")
-                .Show(10, 100);
+                .Show(10, 20);
 
             // Criando um novo dataframe na mão
             StructType schemaEstados = new StructType(new[]
@@ -112,24 +118,28 @@ namespace BatchDemo
             // Efetuando o join em cima da coluna UF, que é a chave dos dois dataframes
             df = df.Join(estados, "UF");
             df.PrintSchema();
-            df.Show(10, 100);
+            df.Show(10, 15);
 
             // Criando uma nova coluna a partir de uma concatenação, e removendo as antigas
-            df = df.WithColumn("CIDADE", Functions.Concat(df.Col("NOME_UF"), Functions.Lit(" - "), df.Col("MUNICIPIO")))
+            df = df.WithColumn("LOCAL", Functions.Concat(
+                                            df.Col("UF"), 
+                                            Functions.Lit(" - "), 
+                                            df.Col("MUNICIPIO"))
+                                        )
                 .Drop("UF")
                 .Drop("NOME_UF")
                 .Drop("CODIGO_MUNICIPIO")
                 .Drop("MUNICIPIO");
             df.PrintSchema();
-            df.Show(10, 100);
+            df.Show(10, 15);
 
             // Efetuando uma agregação
-            DataFrame somatorio = df.GroupBy("CIDADE")
+            DataFrame somatorio = df.GroupBy("LOCAL")
                 .Sum("VALOR")
                 .WithColumnRenamed("sum(VALOR)", "SOMA_BENEFICIOS")
                 .OrderBy(Functions.Col("SOMA_BENEFICIOS").Desc());
             somatorio.PrintSchema();
-            somatorio.Show(15, 100);
+            somatorio.Show(15, 40);
 
             if (args.Length >= 2)
             {

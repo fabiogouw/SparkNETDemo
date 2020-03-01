@@ -67,11 +67,11 @@ namespace KafkaProducer
             "Não gostei deste produto, é horrível",
             "Muito excelente a qualidade, perfeito!",
             "Não quero nem ver isso perto de mim",
-            "Gastei meu dinheiro à toa",
+            "Gastei meu dinheiro de uma forma ótima",
             "Comprarei outros da próxima vez com total certeza",
             "A loja estava muito suja",
-            "Palmeiras não tem mundial",
-            "Deve ver demais isso, a qualidade é ótima",
+            "Palmeiras nao tem mundial",
+            "Deve vender demais isso, a qualidade é ótima",
             "Bom pra caramba"
         };
     }

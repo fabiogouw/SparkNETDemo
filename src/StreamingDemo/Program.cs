@@ -10,9 +10,14 @@ namespace StreamingDemo
     {
         /* Copiar jars para a pasta do Hadoop spark-sql-kafka-0-10_2.11-2.4.5.jar e kafka-clients-2.4.0.jar
          * ou --packages org.apache.spark:spark-sql-kafka-0-10_2.12:2.4.5
-         * %SPARK_HOME%\bin\spark-submit --class org.apache.spark.deploy.dotnet.DotnetRunner \
-         * --master local bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar dotnet bin\Debug\netcoreapp3.1\StreamingDemo.dll \
-         * localhost:9092 test data\MLModel.zip
+         * %SPARK_HOME%\bin\spark-submit
+         * --class org.apache.spark.deploy.dotnet.DotnetRunner
+         * --master local
+         * bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar
+         * dotnet
+         * bin\Debug\netcoreapp3.1\StreamingDemo.dll
+         * localhost:9092 test
+         * data\MLModel.zip
          */
         static void Main(string[] args)
         {
@@ -27,7 +32,8 @@ namespace StreamingDemo
                 .GetOrCreate();
 
             //Registrando uma função personalizada pra ser usada no dataframe
-            spark.Udf().Register<string, float>("AnaliseDeSentimento", (text) => AnalisarSentimento(text, modelo));
+            spark.Udf().Register<string, float>("AnaliseDeSentimento",
+                (texto) => AnalisarSentimento(texto, modelo));
 
             // Criando um dataframe pra receber dados do Kafka
             DataFrame df = spark
@@ -39,7 +45,14 @@ namespace StreamingDemo
                 .Load()
                 .SelectExpr("CAST(value AS STRING)");
 
-            // Criando schema pra validar o JSON que virá nas mensagens do Kafka
+            /* Criando schema pra validar o JSON que virá nas mensagens do Kafka
+             * Exemplo do JSON: 
+             * {
+             *      "cliente": "Fulano", 
+             *      "produto": "Mochila", 
+             *      "opiniao": "Muito boa!"
+             * }
+             */
             StructType schema = new StructType(new[]
 {
                 new StructField("cliente", new StringType()),
@@ -48,7 +61,10 @@ namespace StreamingDemo
             }); // struct<cliente:string,produto:string,valor_total:float>
 
             // Fazendo o parse do JSON pra um array ...
-            df = df.WithColumn("json", Functions.FromJson(df.Col("value"), schema.SimpleString))
+            df = df.WithColumn("json", Functions.FromJson(
+                                            df.Col("value"),
+                                            schema.SimpleString)
+                                        )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
             // Criando nova coluna nota com o resultado da análise de sentimento
             df = df.WithColumn("nota", Functions.CallUDF("AnaliseDeSentimento", df.Col("opiniao")));
