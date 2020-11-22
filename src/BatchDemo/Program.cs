@@ -15,9 +15,9 @@ namespace BatchDemo
              *   %SPARK_HOME%\bin\spark-submit 
              *   --master local 
              *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
-             *   bin\Debug\netcoreapp3.1\microsoft-spark-2.4.x-0.10.0.jar 
+             *   bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
              *   dotnet 
-             *   bin\Debug\netcoreapp3.1\BatchDemo.dll 
+             *   bin\Debug\net5.0\BatchDemo.dll 
              *   data\amostra.csv 
              *   jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
              */
