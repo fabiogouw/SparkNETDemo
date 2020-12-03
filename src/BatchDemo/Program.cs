@@ -1,6 +1,7 @@
 ﻿using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Types;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 namespace BatchDemo
@@ -19,7 +20,7 @@ namespace BatchDemo
              *   dotnet 
              *   bin\Debug\net5.0\BatchDemo.dll 
              *   data\amostra.csv 
-             *   jdbc:mysql://localhost:3306/db_streaming beneficios spark_user my-secret-password
+             *   jdbc:mysql://localhost:3306/teste_spark beneficios spark_user my-secret-password
              */
 
             if (args.Length == 0)
@@ -53,7 +54,6 @@ namespace BatchDemo
             DataFrame df = spark.Read()
                 .Format("csv")
                 .Schema(schema)
-                //.Option("inferSchema", true)
                 .Option("sep", ";")
                 .Option("header", true)
                 .Option("dateFormat", "dd/MM/yyyy")
@@ -84,15 +84,13 @@ namespace BatchDemo
             //df = df.Where("UF <> 'AC'");  // passar uma expressão WHERE também funciona como filtro
             df.Show(5, 10);
 
-            // Criando uma nova coluna a partir de uma concatenação e removendo colunas antigas e que não precisamos mais
-            df = df.WithColumn("MUNICIPIO", Functions.Concat(
-                                            df.Col("UF"),
-                                            Functions.Lit(" - "),
-                                            df.Col("MUNICIPIO"))
-                                        )
-                .Drop("UF");
-            df.Show(10, 15);
+            spark.Udf().Register<string, string, string>("ConcatenarMunicipio",
+                (uf, municipio) => ConcatenarMunicipio(uf, municipio));
 
+            // Criando uma nova coluna a partir de uma concatenação e removendo colunas antigas e que não precisamos mais
+            df = df.WithColumn("MUNICIPIO",
+                Functions.CallUDF("ConcatenarMunicipio", df.Col("UF"), df.Col("MUNICIPIO")))
+                .Drop("UF");
             // Efetuando uma agregação
             DataFrame somatorio = df.GroupBy("MUNICIPIO")
                 .Sum("VALOR")
@@ -103,7 +101,7 @@ namespace BatchDemo
 
             if (args.Length >= 2)
             {
-                string urlJdbc = args[1];   // jdbc:mysql://localhost:3306/db_streaming
+                string urlJdbc = args[1];   // jdbc:mysql://localhost:3306/teste_spark
                 string tabela = args[2];    // beneficios
                 string usuario = args[3];   // spark_user
                 string senha = args[4];     // my-secret-password
@@ -121,6 +119,11 @@ namespace BatchDemo
                     .Jdbc(urlJdbc, tabela, propriedades);
             }
             spark.Stop();
+        }
+
+        public static string ConcatenarMunicipio(string uf, string municipio)
+        {
+            return $"{uf} - {municipio}";
         }
     }
 }
