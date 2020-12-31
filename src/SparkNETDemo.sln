@@ -7,7 +7,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BatchDemo", "BatchDemo\Batc
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamingDemo", "StreamingDemo\StreamingDemo.csproj", "{5F0E8051-6404-45A1-A102-3458D74BCCD0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KafkaProducer", "KafkaProducer\KafkaProducer.csproj", "{D3B2E659-04D7-4CE5-AB19-75502185D545}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KafkaProducer", "KafkaProducer\KafkaProducer.csproj", "{D3B2E659-04D7-4CE5-AB19-75502185D545}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeliveryDataProducer", "DeliveryDataProducer\DeliveryDataProducer.csproj", "{DF49A322-1ACB-4EDF-988B-5C8EF768F498}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{D3B2E659-04D7-4CE5-AB19-75502185D545}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D3B2E659-04D7-4CE5-AB19-75502185D545}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D3B2E659-04D7-4CE5-AB19-75502185D545}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DF49A322-1ACB-4EDF-988B-5C8EF768F498}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DF49A322-1ACB-4EDF-988B-5C8EF768F498}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DF49A322-1ACB-4EDF-988B-5C8EF768F498}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DF49A322-1ACB-4EDF-988B-5C8EF768F498}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
