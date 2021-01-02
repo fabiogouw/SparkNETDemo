@@ -29,8 +29,8 @@ namespace DeliveryDataProducer
         {
             if (!Lost)
             {
-                Lat = _deliveryTruck.Lat + _random.NextDouble(-1, +1) / 100000;
-                Lng = _deliveryTruck.Lng + _random.NextDouble(-1, +1) / 100000;
+                Lat = _deliveryTruck.Lat; // + _random.NextDouble(-1, +1) / 100000;
+                Lng = _deliveryTruck.Lng; // + _random.NextDouble(-1, +1) / 100000;
             }
             EventTime = DateTime.Now;
         }

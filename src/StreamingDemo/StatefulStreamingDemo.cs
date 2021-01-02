@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Spark.Sql.Expressions;
 
 namespace StreamingDemo
 {
@@ -80,57 +81,51 @@ namespace StreamingDemo
                                             schemaTrucks.SimpleString)
                                         )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
+            dfTrucks = dfTrucks.WithColumnRenamed("lat", "truck_lat")
+                .WithColumnRenamed("lng", "truck_lng")
+                .WithColumnRenamed("eventTime", "truck_eventTime");
 
-            //dfPackages = dfPackages.WithWatermark("eventTime", "2 seconds");
-            //dfTrucks = dfTrucks.WithWatermark("eventTime", "2 seconds");
+            dfPackages = dfPackages.WithWatermark("eventTime", "10 seconds")
+                .GroupBy(Functions.Window(Functions.Col("eventTime"), "10 seconds", "5 seconds"), Functions.Col("id"), Functions.Col("idTruck"))
+                .Max();
+            //Functions.RowNumber().Over()
 
-            DataFrame df = dfPackages.Join(dfTrucks, dfPackages.Col("idTruck").EqualTo(dfTrucks.Col("id")));
+            dfTrucks = dfTrucks.WithWatermark("truck_eventTime", "10 seconds");
+
+            //DataFrame df = dfPackages.Join(dfTrucks, dfPackages.Col("idTruck").EqualTo(dfTrucks.Col("id")));
+            //df.PrintSchema();
 
             //Registrando uma função personalizada pra ser usada no dataframe
-            //spark.Udf().Register<string, float>("AnaliseDeSentimento", (texto) => AnalisarSentimento(texto, modelo));
+            spark.Udf().Register<double, double, double, double, double>("CalcularDistancia", (lat1, lng1, lat2, lng2) => CalcularDistancia(lat1, lng1, lat2, lng2));
             // Criando nova coluna nota com o resultado da análise de sentimento
-            //df = df.WithColumn("nota", Functions.CallUDF("AnaliseDeSentimento", df.Col("opiniao")));
-
-            //DataFrame impressions = spark
-            //    .ReadStream().Format("rate").Option("rowsPerSecond", "5").Option("numPartitions", "1").Load()
-            //    .Select(Functions.Col("value").As("adId"), Functions.Col("timestamp").As("impressionTime"));
-            //DataFrame clicks = spark
-            //      .ReadStream().Format("rate").Option("rowsPerSecond", "5").Option("numPartitions", "1").Load()
-            //      .Where((Functions.Rand() * 100).Cast("integer") < 10)       // 10 out of every 100 impressions result in a click
-            //      .Select(Functions.Col("value").Minus(50).As("adId"), Functions.Col("timestamp").As("clickTime"))   // -100 so that a click with same id as impression is generated much later.
-            //      .Where("adId > 0");
-            //DataFrame df = impressions.Join(clicks, "adId");
-            //StreamingQuery query = df
-            //    .WriteStream()
-            //    .Format("console")
-            //    .Start();
+            //df = df.WithColumn("dist", Functions.CallUDF("CalcularDistancia", df.Col("lat"), df.Col("lng"), df.Col("truck_lat"), df.Col("truck_lng")));
 
             // Colocando o streaming pra funcionar
-            StreamingQuery query = df
+
+            //df = df.Where(df.Col("dist").Gt(20));
+            StreamingQuery query = dfPackages
                 .WriteStream()
                 //.OutputMode(OutputMode.Append)
                 .Format("console")
                 //.Trigger(Trigger.Continuous(2000))
                 //.Foreach(new RedisForeachWriter())
                 .Start();
-            /*StreamingQuery query2 = dfTrucks
-                .WriteStream()
-                .Format("console")
-                .Start();
-            query2.AwaitTermination();*/
             query.AwaitTermination();   // Necessário pra deixar a aplcação no ar para processar os dados
 
         }
 
-        /*
-        public static float AnalisarSentimento(string texto, string caminhoDoModelo)
+        public static double CalcularDistancia(double lat1, double lng1, double lat2, double lng2)
         {
-            var contexto = new MLContext();
-            ITransformer modelo = contexto.Model.Load(caminhoDoModelo, out var modelInputSchema);
-            PredictionEngine<Avaliacao, ResultadoPredicao> predEngine = contexto.Model.CreatePredictionEngine<Avaliacao, ResultadoPredicao>(modelo);
-            ResultadoPredicao resultado = predEngine.Predict(new Avaliacao { TextoAvaliacao = texto });
-            return resultado.Nota;
+            double rlat1 = Math.PI * lat1 / 180;
+            double rlat2 = Math.PI * lat2 / 180;
+            double theta = lng1 - lng2;
+            double rtheta = Math.PI * theta / 180;
+            double dist = Math.Sin(rlat1) * Math.Sin(rlat2) + Math.Cos(rlat1) * Math.Cos(rlat2) * Math.Cos(rtheta);
+            dist = Math.Acos(dist);
+            dist = dist * 180 / Math.PI;
+            dist = dist * 60 * 1.1515;
+
+            return dist * 1609.344; // em metros
         }
-        */
     }
 }
