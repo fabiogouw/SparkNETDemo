@@ -12,7 +12,6 @@ namespace DeliveryDataProducer
 {
     public class Generator
     {
-        private RNGCryptoServiceProvider _rnd = new RNGCryptoServiceProvider();
         private Random _random = new Random(Environment.TickCount);
         private List<Trackable> _trackeables = new List<Trackable>();
         private TimeSpan _interval;
@@ -35,7 +34,7 @@ namespace DeliveryDataProducer
                 }
             }
             var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
-            //_kafkaProducer = new ProducerBuilder<Null, string>(config).Build();
+            _kafkaProducer = new ProducerBuilder<Null, string>(config).Build();
         }
 
         public void StartNotifyLocationOfAllDevices()
@@ -54,9 +53,9 @@ namespace DeliveryDataProducer
                 lock (trackeable)
                 {
                     trackeable.Move();
-                    string json = JsonSerializer.Serialize(trackeable);
+                    string json = JsonSerializer.Serialize((object)trackeable);
                     _report.Invoke(json);
-                    //_kafkaProducer.Produce(trackeable.GetTrackableType(), new Message<Null, string> { Value = json });
+                    _kafkaProducer.Produce(trackeable.GetTrackableType(), new Message<Null, string> { Value = json });
                 }
                 i++;
             }, null, TimeSpan.FromSeconds(1), wait);

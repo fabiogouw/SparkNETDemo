@@ -18,7 +18,7 @@ namespace DeliveryDataProducer
 
         public override void Write(Utf8JsonWriter writer, double value, JsonSerializerOptions options)
         {
-            writer.WriteStringValue(value.ToString("#.#####", CultureInfo.InvariantCulture));
+            writer.WriteNumberValue(Math.Truncate(value * 100000) / 100000);
         }
     }
 }

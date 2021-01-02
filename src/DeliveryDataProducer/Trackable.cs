@@ -21,8 +21,8 @@ namespace DeliveryDataProducer
         [JsonPropertyName("lng")]
         [JsonConverter(typeof(DoubleJsonConverter))]
         public double Lng { get; set; }
-        [JsonPropertyName("lastInfo")]
-        public DateTime LastInfo { get; set; }
+        [JsonPropertyName("eventTime")]
+        public DateTime EventTime { get; set; }
         public abstract void Move();
         public abstract string GetTrackableType();
     }

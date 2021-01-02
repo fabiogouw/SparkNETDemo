@@ -22,6 +22,7 @@ namespace DeliveryDataProducer
 
         private void btnStart_Click(object sender, EventArgs e)
         {
+            txtLog.Clear();
             _generator = new Generator((int)numDeliveryTrucks.Value, (int)numPackages.Value, txtInterval.Text, (r) => AppendLog(r));
             _generator.StartNotifyLocationOfAllDevices();
         }

@@ -35,7 +35,7 @@ namespace DeliveryDataProducer
             {
                 _directionLng *= -1;
             }
-            LastInfo = DateTime.Now;
+            EventTime = DateTime.Now;
         }
 
         public override string GetTrackableType()
