@@ -81,36 +81,45 @@ namespace StreamingDemo
                                             schemaTrucks.SimpleString)
                                         )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
-            dfTrucks = dfTrucks.WithColumnRenamed("lat", "truck_lat")
+            dfTrucks = dfTrucks.WithColumnRenamed("id", "truck_id")
+                .WithColumnRenamed("lat", "truck_lat")
                 .WithColumnRenamed("lng", "truck_lng")
                 .WithColumnRenamed("eventTime", "truck_eventTime");
 
-            dfPackages = dfPackages.WithWatermark("eventTime", "10 seconds")
-                .GroupBy(Functions.Window(Functions.Col("eventTime"), "10 seconds", "5 seconds"), Functions.Col("id"), Functions.Col("idTruck"))
-                .Max();
-            //Functions.RowNumber().Over()
+            dfPackages = dfPackages
+                .WithColumn("package_window", Functions.Window(Functions.Col("eventTime"), "10 seconds").As("package_window"));
 
-            dfTrucks = dfTrucks.WithWatermark("truck_eventTime", "10 seconds");
+            DataFrame df = dfPackages
+                .WithWatermark("eventTime", "10 seconds")
+                .GroupBy(Functions.Window(Functions.Col("eventTime"), "10 seconds"), Functions.Col("id")).Count();
 
-            //DataFrame df = dfPackages.Join(dfTrucks, dfPackages.Col("idTruck").EqualTo(dfTrucks.Col("id")));
+            dfTrucks = dfTrucks.WithWatermark("truck_eventTime", "10 seconds")
+                .WithColumn("", Functions.Window(Functions.Col("truck_eventTime"), "10 seconds").As("truck_window"));
+
+            //DataFrame df = dfPackages.Join(dfTrucks, Functions.Col("truck_window").Gt(Functions.Col("package_window")));
+            //DataFrame df = dfPackages.Join(dfTrucks, Functions.Col("idTruck").EqualTo(Functions.Col("truck_id"))
+                //.And(Functions.Col("truck_window").EqualTo(Functions.Col("package_window")))
+            //    );
             //df.PrintSchema();
 
             //Registrando uma função personalizada pra ser usada no dataframe
-            spark.Udf().Register<double, double, double, double, double>("CalcularDistancia", (lat1, lng1, lat2, lng2) => CalcularDistancia(lat1, lng1, lat2, lng2));
+            //spark.Udf().Register<double, double, double, double, double>("CalcularDistancia", (lat1, lng1, lat2, lng2) => CalcularDistancia(lat1, lng1, lat2, lng2));
             // Criando nova coluna nota com o resultado da análise de sentimento
             //df = df.WithColumn("dist", Functions.CallUDF("CalcularDistancia", df.Col("lat"), df.Col("lng"), df.Col("truck_lat"), df.Col("truck_lng")));
 
             // Colocando o streaming pra funcionar
 
             //df = df.Where(df.Col("dist").Gt(20));
-            StreamingQuery query = dfPackages
+            StreamingQuery query = df
                 .WriteStream()
-                //.OutputMode(OutputMode.Append)
                 .Format("console")
-                //.Trigger(Trigger.Continuous(2000))
-                //.Foreach(new RedisForeachWriter())
+                .Option("truncate", "false")
+                .OutputMode(OutputMode.Update)
                 .Start();
-            query.AwaitTermination();   // Necessário pra deixar a aplcação no ar para processar os dados
+            Console.ReadLine();
+            Console.WriteLine("Parando query...");
+            query.Stop();
+            //query.AwaitTermination();   // Necessário pra deixar a aplcação no ar para processar os dados
 
         }
 

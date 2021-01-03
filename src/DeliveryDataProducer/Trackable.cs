@@ -22,6 +22,7 @@ namespace DeliveryDataProducer
         [JsonConverter(typeof(DoubleJsonConverter))]
         public double Lng { get; set; }
         [JsonPropertyName("eventTime")]
+        [JsonConverter(typeof(DateTimeJsonConverter))]
         public DateTime EventTime { get; set; }
         public abstract void Move();
         public abstract string GetTrackableType();
