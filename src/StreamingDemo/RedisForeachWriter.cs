@@ -13,11 +13,13 @@ namespace StreamingDemo
         //private MySqlConnection _connection;
         public void Close(Exception errorOrNull)
         {
+            Console.WriteLine($"==> Close");
             //_connection.Close();
         }
 
         public bool Open(long partitionId, long epochId)
         {
+            Console.WriteLine($"==> Open");
             //_connection = new MySqlConnection("server=localhost; database=db_streaming; uid=spark_user; pwd=my-secret-password;");
             //_connection.Open();
             return true;
@@ -25,7 +27,7 @@ namespace StreamingDemo
 
         public void Process(Row row)
         {
-            Console.WriteLine($"==> {row.Get("cliente")} - {row.Get("produto")} - {row.Get("opiniao")} - {row.Get("nota")}");
+            Console.WriteLine($"==> {row.Get("transaction")} - {row.Get("dist")} - {row.Get("speed")}");
             //var cmd = _connection.CreateCommand() as MySqlCommand;
             //cmd.CommandText = @"INSERT INTO avaliacoes (cliente, produto, opiniao, nota) VALUES (@cliente, @produto, @opiniao, @nota);";
             //cmd.Parameters.AddWithValue("@cliente", row.Get("cliente"));

@@ -20,11 +20,23 @@ namespace DeliveryDataProducer
             InitializeComponent();
         }
 
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            _generator = new Generator(0, "00:00:00", (r) => AppendLog(r));
+        }
+
+        private void btnGetLast_Click(object sender, EventArgs e)
+        {
+            txtCmds.Text = txtLog.Lines.LastOrDefault(s => !string.IsNullOrWhiteSpace(s));
+        }
+
         private void btnStart_Click(object sender, EventArgs e)
         {
+            btnStart.Enabled = false;
             txtLog.Clear();
-            _generator = new Generator((int)numDeliveryTrucks.Value, (int)numPackages.Value, txtInterval.Text, (r) => AppendLog(r));
+            _generator = new Generator((int)numDeliveryTrucks.Value, txtInterval.Text, (r) => AppendLog(r));
             _generator.StartNotifyLocationOfAllDevices();
+            btnStop.Enabled = true;
         }
 
         private void AppendLog(string log)
@@ -38,32 +50,14 @@ namespace DeliveryDataProducer
 
         private void btnStop_Click(object sender, EventArgs e)
         {
-            if(_generator != null)
-            {
-                _generator.StopNotifyLocationOfAllDevices();
-            }
+            btnStop.Enabled = false;
+            _generator.StopNotifyLocationOfAllDevices();
+            btnStart.Enabled = true;
         }
 
-        private void btnLose_Click(object sender, EventArgs e)
+        private void btnSend_Click(object sender, EventArgs e)
         {
-            if (lstPackages.SelectedItem != null)
-            {
-                _generator.LostPackages(lstPackages.SelectedItem.ToString());
-            }
-        }
-
-        private void btnUnlose_Click(object sender, EventArgs e)
-        {
-            _generator.LostPackages(string.Empty);
-        }
-
-        private void txtPackages_TextChanged(object sender, EventArgs e)
-        {
-            lstPackages.Items.Clear();
-            if (!string.IsNullOrEmpty(txtPackages.Text))
-            {
-                lstPackages.Items.AddRange(_generator.SearchPackagesToBeLost(txtPackages.Text));
-            }
+            _generator.SendCommands(txtCmds.Lines);
         }
     }
     // https://stackoverflow.com/questions/15965166/what-is-the-maximum-length-of-latitude-and-longitude
