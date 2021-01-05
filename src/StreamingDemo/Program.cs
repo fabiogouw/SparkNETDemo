@@ -42,7 +42,8 @@ namespace StreamingDemo
         private static Dictionary<string, Func<IDemo>> _demos = new Dictionary<string, Func<IDemo>>()
         {
             ["MLNETStreamingDemo"] = () => new MLNETStreamingDemo(),
-            ["StatefulStreamingDemo"] = () => new StatefulStreamingDemo()
+            ["JoinStreamingDemo"] = () => new JoinStreamingDemo(),
+            ["WindowStreamingDemo"] = () => new WindowStreamingDemo()
         };
     }
 }

@@ -38,9 +38,9 @@ namespace DeliveryDataProducer
             this.numDeliveryTrucks = new System.Windows.Forms.NumericUpDown();
             this.txtLog = new System.Windows.Forms.TextBox();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
+            this.btnGetLast = new System.Windows.Forms.Button();
             this.btnSend = new System.Windows.Forms.Button();
             this.txtCmds = new System.Windows.Forms.TextBox();
-            this.btnGetLast = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numDeliveryTrucks)).BeginInit();
             this.groupBox3.SuspendLayout();
@@ -157,6 +157,16 @@ namespace DeliveryDataProducer
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "Send";
             // 
+            // btnGetLast
+            // 
+            this.btnGetLast.Location = new System.Drawing.Point(819, 22);
+            this.btnGetLast.Name = "btnGetLast";
+            this.btnGetLast.Size = new System.Drawing.Size(50, 39);
+            this.btnGetLast.TabIndex = 2;
+            this.btnGetLast.Text = "Get Last";
+            this.btnGetLast.UseVisualStyleBackColor = true;
+            this.btnGetLast.Click += new System.EventHandler(this.btnGetLast_Click);
+            // 
             // btnSend
             // 
             this.btnSend.Location = new System.Drawing.Point(819, 76);
@@ -174,18 +184,8 @@ namespace DeliveryDataProducer
             this.txtCmds.Name = "txtCmds";
             this.txtCmds.Size = new System.Drawing.Size(797, 93);
             this.txtCmds.TabIndex = 0;
-            this.txtCmds.Text = "{\"transaction\":\"x1\",\"number\":\"0001-0000-0000-0000\",\"lat\":40.83437,\"lng\":-57.83322" +
-    ",\"amount\":31.02969,\"eventTime\":\"2021-01-03T18:16:58.2378\"}";
-            // 
-            // btnGetLast
-            // 
-            this.btnGetLast.Location = new System.Drawing.Point(819, 22);
-            this.btnGetLast.Name = "btnGetLast";
-            this.btnGetLast.Size = new System.Drawing.Size(50, 39);
-            this.btnGetLast.TabIndex = 2;
-            this.btnGetLast.Text = "Get Last";
-            this.btnGetLast.UseVisualStyleBackColor = true;
-            this.btnGetLast.Click += new System.EventHandler(this.btnGetLast_Click);
+            this.txtCmds.Text = "{\"transaction\":\"431\",\"number\":\"0015-0000-0000-0000\",\"lat\":5.1618,\"lng\":0.47201,\"a" +
+    "mount\":91.01487,\"category\":\"lazer\",\"eventTime\":\"2021-01-05T19:07:19.3888\"}";
             // 
             // Form1
             // 
