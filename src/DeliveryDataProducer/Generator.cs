@@ -22,15 +22,16 @@ namespace DeliveryDataProducer
 
         public Generator(int numberOfCreditCards, string interval, Action<string> report)
         {
+            string creditCardPrefix = DateTime.Now.ToString("HHmm");
             _report = report;
             _interval = TimeSpan.Parse(interval);
             for (int i = 0; i < Math.Min(numberOfCreditCards, 9999); i++)
             {
                 var simulator = new CreditCardSimulator()
                 {
-                    Number = $"{i:0000}-0000-0000-0000",
-                    Lat = _random.NextDouble(-45, +45),
-                    Lng = _random.NextDouble(-90, +90)
+                    Number = $"{creditCardPrefix}-0000-0000-{i:0000}",
+                    Lat = _random.NextDouble(CreditCardSimulator.LAT_LEFT_LIMIT, CreditCardSimulator.LAT_RIGTH_LIMIT),
+                    Lng = _random.NextDouble(CreditCardSimulator.LNG_LOWER_LIMIT, CreditCardSimulator.LNG_UPPER_LIMIT)
             };
                 _simulators.Add(simulator);
             }
@@ -62,7 +63,7 @@ namespace DeliveryDataProducer
                 var simulator = simulators[i];
                 lock (simulator)
                 {
-                    simulator.GenerateNormalTransaction(wait);
+                    simulator.GenerateNormalTransaction();
                     string json = JsonSerializer.Serialize((object)simulator);
                     _report.Invoke(json);
                     _kafkaProducer.Produce("transactions", new Message<Null, string> { Value = json });

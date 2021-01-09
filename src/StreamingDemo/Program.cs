@@ -30,8 +30,17 @@ namespace StreamingDemo
          * bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
          * dotnet 
          * bin\Debug\net5.0\StreamingDemo.dll 
-         * StatefulStreamingDemo 
-         * localhost:9092
+         * JoinStreamingDemo 
+         * localhost:9092 200
+         * 
+         * %SPARK_HOME%\bin\spark-submit 
+         * --master local 
+         * --class org.apache.spark.deploy.dotnet.DotnetRunner 
+         * bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
+         * dotnet 
+         * bin\Debug\net5.0\StreamingDemo.dll 
+         * WindowStreamingDemo 
+         * localhost:9092 "server=localhost; database=teste_spark; uid=spark_user; pwd=my-secret-password;"
          */
         static void Main(string[] args)
         {

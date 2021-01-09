@@ -1,14 +1,8 @@
-﻿using Microsoft.ML;
-using Microsoft.ML.Data;
-using Microsoft.Spark.Sql;
+﻿using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Streaming;
 using Microsoft.Spark.Sql.Types;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Spark.Sql.Expressions;
+using static Microsoft.Spark.Sql.Functions;
 
 namespace StreamingDemo
 {
@@ -16,7 +10,7 @@ namespace StreamingDemo
     {
         public void Run(string[] args)
         {
-            string servidoresKafka = args[0];
+            string kafkaBrokers = args[0];
             double maxSpeed = double.Parse(args[1]);
 
             // Obtém a referência ao contexto de execução do Spark
@@ -28,10 +22,10 @@ namespace StreamingDemo
             spark.Conf().Set("spark.sql.shuffle.partitions", "1");  // sem essa configuração, cada stage ficou com 200 tasks, o que levou uns 4 minutos pra cada batch executar
 
             // Criando um dataframe pra receber dados do Kafka
-            DataFrame dfTransactions = spark
+            DataFrame df = spark
                 .ReadStream()
                 .Format("kafka")
-                .Option("kafka.bootstrap.servers", servidoresKafka)
+                .Option("kafka.bootstrap.servers", kafkaBrokers)
                 .Option("subscribe", "transactions")
                 .Load()
                 .SelectExpr("CAST(value AS STRING)");
@@ -39,12 +33,16 @@ namespace StreamingDemo
             /* Criando schema pra validar o JSON que virá nas mensagens do Kafka
              * Exemplo do JSON: 
              * {
-             *      "cliente": "Fulano", 
-             *      "produto": "Mochila", 
-             *      "opiniao": "Muito boa!"
+             *      "transaction":"431",
+             *      "number":"0015-0000-0000-0000",
+             *      "lat":-23.1618,
+             *      "lng":-46.47201,
+             *      "amount":91.01487,
+             *      "category":"pets",
+             *      "eventTime":"2021-01-05T19:07:19.3888"
              * }
              */
-            var schemaPackages = new StructType(new[]
+            var schema = new StructType(new[]
 {
                             new StructField("transaction", new StringType()),
                             new StructField("number", new StringType()),
@@ -56,16 +54,16 @@ namespace StreamingDemo
                         });
 
             // Fazendo o parse do JSON pra um array ...
-            dfTransactions = dfTransactions.WithColumn("json", Functions.FromJson(
-                                            dfTransactions.Col("value"),
-                                            schemaPackages.SimpleString)
-                                        )
+            df = df.WithColumn("json", FromJson(
+                                        df.Col("value"),
+                                        schema.SimpleString)
+                                    )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
 
             // Gerando dois dataframes distintos para poder fazer o join e analisar a correção entre as transações
-            DataFrame df1 = dfTransactions
+            DataFrame df1 = df
                 .WithWatermark("eventTime", "7 minutes");
-            DataFrame df2 = dfTransactions
+            DataFrame df2 = df
                 .WithColumnRenamed("transaction", "transaction2")
                 .WithColumnRenamed("lat", "lat2")
                 .WithColumnRenamed("lng", "lng2")
@@ -73,35 +71,33 @@ namespace StreamingDemo
                 .WithWatermark("eventTime2", "7 minutes");
 
             // Efetuando o join para verificar a correlação de transações dos cartões de crédito
-            DataFrame df = df1.Join(df2, 
+            DataFrame dfJoin = df1.Join(df2, 
                 df1.Col("number").EqualTo(df2.Col("number"))
-                .And(Functions.Col("transaction").NotEqual(Functions.Col("transaction2")))
-                .And(Functions.Col("eventTime2").Between(Functions.Col("eventTime"), Functions.Col("eventTime") + Functions.Expr("interval 5 minutes")))
+                .And(Col("transaction").NotEqual(Col("transaction2")))
+                .And(Col("eventTime2").Between(Col("eventTime"), Col("eventTime") + Expr("interval 5 minutes")))
                 );
 
             //Registrando uma função personalizada pra ser usada no dataframe
             spark.Udf().Register<double, double, double, double, double>("CalculateDistance", (lat1, lng1, lat2, lng2) => CalculateDistance(lat1, lng1, lat2, lng2));
             spark.Udf().Register<double, Timestamp, Timestamp, double>("CalculateSpeed", (dist, eventTime, eventTime2) => CalculateSpeed(dist, eventTime, eventTime2));
+
             // Criando novas colunas para armazenar a execução do código da UDF
-            df = df.WithColumn("dist", Functions.CallUDF("CalculateDistance", df.Col("lat"), df.Col("lng"), df.Col("lat2"), df.Col("lng2")));
-            df = df.WithColumn("speed", Functions.CallUDF("CalculateSpeed", df.Col("dist"), df.Col("eventTime"), df.Col("eventTime2")));
+            dfJoin = dfJoin.WithColumn("dist", CallUDF("CalculateDistance", Col("lat"), Col("lng"), Col("lat2"), Col("lng2")));
+            dfJoin = dfJoin.WithColumn("speed", CallUDF("CalculateSpeed", Col("dist"), Col("eventTime"), Col("eventTime2")));
 
             // Filtrando as transações que tiverem a velocidade acima do esperado (parâmetro "maxSpeed")
-            df = df.Where(Functions.Col("speed").Gt(maxSpeed));
+            dfJoin = dfJoin.Where(Col("speed").Gt(maxSpeed));
 
             // Colocando o streaming pra funcionar
 
-            var writer = new MySQLForeachWriter();
-            StreamingQuery query = df
+            StreamingQuery query = dfJoin
                 .WriteStream()
                 .Format("console")
                 .Option("truncate", "false")
                 .OutputMode(OutputMode.Append)
-                //.Foreach(writer)
                 .Start();
-            Console.ReadLine();
-            Console.WriteLine("Parando query...");
-            query.Stop();
+
+            query.AwaitTermination();
         }
 
         public static double CalculateDistance(double lat1, double lng1, double lat2, double lng2)

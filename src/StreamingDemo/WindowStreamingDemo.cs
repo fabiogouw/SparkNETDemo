@@ -1,14 +1,7 @@
-﻿using Microsoft.ML;
-using Microsoft.ML.Data;
-using Microsoft.Spark.Sql;
+﻿using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Streaming;
 using Microsoft.Spark.Sql.Types;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Spark.Sql.Expressions;
+using static Microsoft.Spark.Sql.Functions;
 
 namespace StreamingDemo
 {
@@ -17,6 +10,7 @@ namespace StreamingDemo
         public void Run(string[] args)
         {
             string servidoresKafka = args[0];
+            string connectionString = args[1];
 
             // Obtém a referência ao contexto de execução do Spark
             SparkSession spark = SparkSession
@@ -27,7 +21,7 @@ namespace StreamingDemo
             spark.Conf().Set("spark.sql.shuffle.partitions", "1");  // sem essa configuração, cada stage ficou com 200 tasks, o que levou uns 4 minutos pra cada batch executar
 
             // Criando um dataframe pra receber dados do Kafka
-            DataFrame dfTransactions = spark
+            DataFrame df = spark
                 .ReadStream()
                 .Format("kafka")
                 .Option("kafka.bootstrap.servers", servidoresKafka)
@@ -38,12 +32,16 @@ namespace StreamingDemo
             /* Criando schema pra validar o JSON que virá nas mensagens do Kafka
              * Exemplo do JSON: 
              * {
-             *      "cliente": "Fulano", 
-             *      "produto": "Mochila", 
-             *      "opiniao": "Muito boa!"
+             *      "transaction":"431",
+             *      "number":"0015-0000-0000-0000",
+             *      "lat":-23.1618,
+             *      "lng":-46.47201,
+             *      "amount":91.01487,
+             *      "category":"pets",
+             *      "eventTime":"2021-01-05T19:07:19.3888"
              * }
              */
-            var schemaPackages = new StructType(new[]
+            var schema = new StructType(new[]
 {
                             new StructField("transaction", new StringType()),
                             new StructField("number", new StringType()),
@@ -55,31 +53,30 @@ namespace StreamingDemo
                         });
 
             // Fazendo o parse do JSON pra um array ...
-            dfTransactions = dfTransactions.WithColumn("json", Functions.FromJson(
-                                            dfTransactions.Col("value"),
-                                            schemaPackages.SimpleString)
-                                        )
+            df = df.WithColumn("json", FromJson(
+                                        df.Col("value"),
+                                        schema.SimpleString)
+                                    )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
 
-            // Gerando dois dataframes distintos para poder fazer o join e analisar a correção entre as transações
-            DataFrame df1 = dfTransactions
-                .WithWatermark("eventTime", "7 minutes");
+            // Colocando um limite de 7 minutos para receber os eventos atrasados
+            df = df.WithWatermark("eventTime", "7 minutes");
 
-            // Efetuando o join para verificar a correlação de transações dos cartões de crédito
-            DataFrame df = df1.GroupBy(Functions.Window(Functions.Col("eventTime"), "4 minutes", "2 minutes"), Functions.Col("category"))
-                .Sum("amount").WithColumnRenamed("sum(amount)", "total");
+            // Somando os valores gastos, agrupando por categoria e por janelas de 4 minutos que se iniciam a cada 2 minutos
+            df = df.GroupBy(Window(Col("eventTime"), "4 minutes", "2 minutes"), Col("category"))
+                .Sum("amount").WithColumnRenamed("sum(amount)", "total")
+                .Select(Col("window.start"), Col("window.end"), Col("category"), Col("total"));
 
-            // Colocando o streaming pra funcionar
-            var writer = new MySQLForeachWriter();
+            // Colocando o streaming pra funcionar e gravando os dados retornados
+            var writer = new MySQLForeachWriter(connectionString);
             StreamingQuery query = df
                 .WriteStream()
                 .Format("console")
                 .OutputMode(OutputMode.Update)
                 .Foreach(writer)
                 .Start();
-            Console.ReadLine();
-            Console.WriteLine("Parando query...");
-            query.Stop();
+
+            query.AwaitTermination();
         }
     }
 }
