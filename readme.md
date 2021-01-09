@@ -36,26 +36,64 @@ Ambos exemplos são executados através de um terminal, por linha de comando. Para
 
 ### Batch
 
+Este é um exemplo que carrega um arquivo CSV contendo dados de pagamento de benefício do Bolsa Familia e executa algumas operações em cima do DataFrame, como agregações.
+
 ````
-   %SPARK_HOME%\bin\spark-submit \
-   --master local \
-   --class org.apache.spark.deploy.dotnet.DotnetRunner \
-   bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
-   dotnet \
-   bin\Debug\net5.0\BatchDemo.dll \
-   data\amostra.csv \
-   jdbc:mysql://localhost:3306/teste_spark beneficios spark_user my-secret-password
+%SPARK_HOME%\bin\spark-submit \
+--master local \
+--class org.apache.spark.deploy.dotnet.DotnetRunner \
+bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
+dotnet \
+bin\Debug\net5.0\BatchDemo.dll \
+data\amostra.csv \
+jdbc:mysql://localhost:3306/teste_spark beneficios spark_user my-secret-password
 ````
 
 ### Streaming
 
+#### ML.NET
+
+Este é um exemplo que "ouve" mensagens de reviews de clientes para determinados produtos e, de acordo com um modelo treinado com ML.NET, efetua a análise de sentimento do texto para verificar se é uma reação positiva ou negativa.
+
 ````
-	%SPARK_HOME%\bin\spark-submit \
-	--master local \
-	--class org.apache.spark.deploy.dotnet.DotnetRunner \
-	bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
-	dotnet \
-	bin\Debug\net5.0\StreamingDemo.dll \
-	localhost:9092 test \
-	data\MLModel.zip
+%SPARK_HOME%\bin\spark-submit \
+--master local \
+--class org.apache.spark.deploy.dotnet.DotnetRunner \
+bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
+dotnet \
+bin\Debug\net5.0\StreamingDemo.dll \
+MLNETStreamingDemo \
+localhost:9092 test \
+data\MLModel.zip
+````
+
+#### Window
+
+Este exemplo utiliza um gerador de transações de cartão de crédito para agrupar a soma das transações pela categoria da compra e pelo momento que ela ocorreu (em janelas de tempo).
+
+````
+%SPARK_HOME%\bin\spark-submit \
+--master local \
+--class org.apache.spark.deploy.dotnet.DotnetRunner \
+bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
+dotnet \
+bin\Debug\net5.0\StreamingDemo.dll \
+WindowStreamingDemo \
+localhost:9092 \
+"server=localhost; database=teste_spark; uid=spark_user; pwd=my-secret-password;"
+````
+
+#### Join
+
+Este exemplo também trata um stream de transações de cartão de crédito, mas neste caso ele avalia se uma transação tem indícios de fraude, que no caso é dado um mesmo cartão, uma nova transação é efetuada dentro de um intervalo de tempo, mas em uma localidade bem distante. É baseado [neste exemplo](https://www.confluent.io/blog/atm-fraud-detection-apache-kafka-ksql/) de análise de fraudes com KSQL.
+
+````
+%SPARK_HOME%\bin\spark-submit \
+--master local \
+--class org.apache.spark.deploy.dotnet.DotnetRunner \
+bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
+dotnet \
+bin\Debug\net5.0\StreamingDemo.dll \
+JoinStreamingDemo \
+localhost:9092 200
 ````
