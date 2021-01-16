@@ -1,5 +1,6 @@
 ﻿using Confluent.Kafka;
 using DeliveryDataProducer.Entities;
+using DeliveryDataProducer.Utils;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,7 @@ namespace DeliveryDataProducer
             };
                 _simulators.Add(simulator);
             }
-            var config = new ProducerConfig { BootstrapServers = "localhost:9092" };
+            var config = new ProducerConfig { BootstrapServers = "localhost:9092", MessageTimeoutMs = 1000 };
             _kafkaProducer = new ProducerBuilder<Null, string>(config).Build();
         }
 
@@ -65,8 +66,17 @@ namespace DeliveryDataProducer
                 {
                     simulator.GenerateNormalTransaction();
                     string json = JsonSerializer.Serialize((object)simulator);
-                    _report.Invoke(json);
-                    _kafkaProducer.Produce("transactions", new Message<Null, string> { Value = json });
+                    _kafkaProducer.Produce("transactions", new Message<Null, string> { Value = json }, deliveryReport =>
+                    {
+                        if (deliveryReport.Error.IsError)
+                        {
+                            _report.Invoke(deliveryReport.Error.ToString());
+                        }
+                        else
+                        {
+                            _report.Invoke(json);
+                        }
+                    });
                 }
                 i++;
             }, null, TimeSpan.FromSeconds(1), wait);

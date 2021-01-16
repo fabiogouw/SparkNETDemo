@@ -17,9 +17,9 @@ namespace StreamingDemo
          * %SPARK_HOME%\bin\spark-submit 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
-         * bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
+         * bin\Debug\netcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
          * dotnet 
-         * bin\Debug\net5.0\StreamingDemo.dll 
+         * bin\Debug\netcoreapp3.1\StreamingDemo.dll 
          * MLNETStreamingDemo 
          * localhost:9092 test 
          * data\MLModel.zip
@@ -27,20 +27,21 @@ namespace StreamingDemo
          * %SPARK_HOME%\bin\spark-submit 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
-         * bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
+         * bin\Debugnetcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
          * dotnet 
-         * bin\Debug\net5.0\StreamingDemo.dll 
+         * bin\Debug\netcoreapp3.1\StreamingDemo.dll 
          * JoinStreamingDemo 
          * localhost:9092 200
          * 
          * %SPARK_HOME%\bin\spark-submit 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
-         * bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
+         * bin\Debug\netcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
          * dotnet 
-         * bin\Debug\net5.0\StreamingDemo.dll 
+         * bin\Debug\netcoreapp3.1\StreamingDemo.dll 
          * WindowStreamingDemo 
-         * localhost:9092 "server=localhost; database=teste_spark; uid=spark_user; pwd=my-secret-password;"
+         * localhost:9092 
+         * "server=localhost;database=teste_spark;uid=spark_user;pwd=my-secret-password;"
          */
         static void Main(string[] args)
         {

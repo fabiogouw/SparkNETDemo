@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamingDemo", "StreamingD
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KafkaProducer", "KafkaProducer\KafkaProducer.csproj", "{D3B2E659-04D7-4CE5-AB19-75502185D545}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DeliveryDataProducer", "DeliveryDataProducer\DeliveryDataProducer.csproj", "{DF49A322-1ACB-4EDF-988B-5C8EF768F498}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TransactionDataProducer", "TransactionDataProducer\TransactionDataProducer.csproj", "{DF49A322-1ACB-4EDF-988B-5C8EF768F498}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A9473296-2B7C-4A4E-AB55-5EC6CB24D9D7}"
 	ProjectSection(SolutionItems) = preProject
