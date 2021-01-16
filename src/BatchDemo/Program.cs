@@ -1,8 +1,8 @@
 ﻿using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Types;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using static Microsoft.Spark.Sql.Functions; // Para acessar as funções estáticas Col, RegexpReplace, etc.
 
 namespace BatchDemo
 {
@@ -60,7 +60,7 @@ namespace BatchDemo
                 .Load(arquivoEntrada);
             df.PrintSchema();
             df.Show(5, 10);
-
+            
             // Removendo colunas que não precisamos mais
             df = df.Drop("MES_REFERENCIA")
                 .Drop("MES_COMPETENCIA")
@@ -69,8 +69,8 @@ namespace BatchDemo
             df.Show(5, 10);
 
             // Convertendo a coluna VALOR de string para decimal, considerando que o padrão brasileiro é diferente do americano
-            df = df.WithColumn("VALOR", Functions.RegexpReplace(
-                                            Functions.RegexpReplace(
+            df = df.WithColumn("VALOR", RegexpReplace(
+                                            RegexpReplace(
                                                 df.Col("VALOR_TEXTO")
                                             , "\\.", "")
                                         , ",", ".")
@@ -89,7 +89,7 @@ namespace BatchDemo
 
             // Criando uma nova coluna a partir de uma concatenação e removendo colunas antigas e que não precisamos mais
             df = df.WithColumn("MUNICIPIO",
-                Functions.CallUDF("ConcatenarMunicipio", df.Col("UF"), df.Col("MUNICIPIO")))
+                CallUDF("ConcatenarMunicipio", df.Col("UF"), df.Col("MUNICIPIO")))
                 .Drop("UF");
             // Efetuando uma agregação
             DataFrame somatorio = df.GroupBy("MUNICIPIO")

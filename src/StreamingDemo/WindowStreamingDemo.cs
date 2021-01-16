@@ -10,7 +10,7 @@ namespace StreamingDemo
         public void Run(string[] args)
         {
             string servidoresKafka = args[0];
-            string connectionString = args[1];
+            string connectionString = args.Length > 1 ? args[1] : string.Empty;
 
             // Obtém a referência ao contexto de execução do Spark
             SparkSession spark = SparkSession
@@ -63,17 +63,16 @@ namespace StreamingDemo
             df = df.WithWatermark("eventTime", "7 minutes");
 
             // Somando os valores gastos, agrupando por categoria e por janelas de 4 minutos que se iniciam a cada 2 minutos
-            df = df.GroupBy(Window(Col("eventTime"), "4 minutes", "2 minutes"), Col("category"))
+            df = df.GroupBy(Window(Col("eventTime"), "2 minutes", "1 minutes"), Col("category"))
                 .Sum("amount").WithColumnRenamed("sum(amount)", "total")
                 .Select(Col("window.start"), Col("window.end"), Col("category"), Col("total"));
 
             // Colocando o streaming pra funcionar e gravando os dados retornados
-            var writer = new MySQLForeachWriter(connectionString);
             StreamingQuery query = df
                 .WriteStream()
                 .Format("console")
                 .OutputMode(OutputMode.Update)
-                .Foreach(writer)
+                //.Foreach(new MySQLForeachWriter(connectionString))    // Descomentar pra gravar em banco de dados
                 .Start();
 
             query.AwaitTermination();
