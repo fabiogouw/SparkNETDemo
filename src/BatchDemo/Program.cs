@@ -16,9 +16,9 @@ namespace BatchDemo
              *   %SPARK_HOME%\bin\spark-submit 
              *   --master local 
              *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
-             *   bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar 
+             *   bin\Debug\netcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
              *   dotnet 
-             *   bin\Debug\net5.0\BatchDemo.dll 
+             *   bin\Debug\netcoreapp3.1\BatchDemo.dll 
              *   data\amostra.csv 
              *   jdbc:mysql://localhost:3306/teste_spark beneficios spark_user my-secret-password
              */
@@ -105,18 +105,18 @@ namespace BatchDemo
                 string tabela = args[2];    // beneficios
                 string usuario = args[3];   // spark_user
                 string senha = args[4];     // my-secret-password
-
-                var propriedades = new Dictionary<string, string>()
-                {
-                    { "user", usuario },
-                    { "password", senha }
-                };
+                
                 // Salvando em banco de dados com funcionalidade nativa do Spark
                 somatorio
                     .Write()
-                    .Mode(SaveMode.Overwrite)
+                    .Format("jdbc")
                     .Option("driver", "com.mysql.cj.jdbc.Driver")
-                    .Jdbc(urlJdbc, tabela, propriedades);
+                    .Option("url", "jdbc:mysql://localhost:3306/teste_spark")
+                    .Option("dbtable", "beneficios")
+                    .Option("user", "spark_user")
+                    .Option("password", "my-secret-password")
+                    .Mode(SaveMode.Overwrite)
+                    .Save();
             }
             spark.Stop();
         }
