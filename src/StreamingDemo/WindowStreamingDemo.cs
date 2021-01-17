@@ -54,7 +54,7 @@ namespace StreamingDemo
 
             // Fazendo o parse do JSON pra um array ...
             df = df.WithColumn("json", FromJson(
-                                        df.Col("value"),
+                                        Col("value"),
                                         schema.SimpleString)
                                     )
                 .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
@@ -62,7 +62,7 @@ namespace StreamingDemo
             // Colocando um limite de 7 minutos para receber os eventos atrasados
             df = df.WithWatermark("eventTime", "7 minutes");
 
-            // Somando os valores gastos, agrupando por categoria e por janelas de 4 minutos que se iniciam a cada 2 minutos
+            // Somando os valores gastos, agrupando por categoria e por janelas de 2 minutos que se iniciam a cada 1 minuto
             df = df.GroupBy(Window(Col("eventTime"), "2 minutes", "1 minutes"), Col("category"))
                 .Sum("amount").WithColumnRenamed("sum(amount)", "total")
                 .Select(Col("window.start"), Col("window.end"), Col("category"), Col("total"));
