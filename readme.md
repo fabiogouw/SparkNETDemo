@@ -30,6 +30,25 @@ Os jars podem ser encontrados e baixados no site do Maven. A dll pode ser encont
 
 Obs. Não vou mentir que essa é uma solução boa, mas funciona para fins de exemplo, ok?
 
+### Banco de Dados
+
+Alguns exemplos consideram a gravação dos resultados de processamento em banco de dados MySQL. Abaixo estão os scripts para criar as duas tabelas necessárias.
+
+````
+CREATE TABLE `beneficios` (
+  `MUNICIPIO` text,
+  `SOMA_BENEFICIOS` decimal(20,2) DEFAULT NULL
+);
+
+CREATE TABLE `total_transactions` (
+  `window_start` datetime NOT NULL,
+  `window_end` datetime NOT NULL,
+  `category` varchar(45) NOT NULL,
+  `total` decimal(15,4) DEFAULT NULL,
+  PRIMARY KEY (`window_start`,`window_end`,`category`)
+);
+````
+
 ## Execução
 
 Ambos exemplos são executados através de um terminal, por linha de comando. Para funcionar, é importante deixar o terminal na mesma pasta raiz do projeto.
