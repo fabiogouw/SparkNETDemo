@@ -26,8 +26,15 @@ namespace StreamingDemo
                 .Format("kafka")
                 .Option("kafka.bootstrap.servers", servidoresKafka)
                 .Option("subscribe", "transactions")
-                .Load()
-                .SelectExpr("CAST(value AS STRING)");
+                .Load();
+
+            /*  Exemplo de saída do dataframe:
+             *  +------+--------------------+--------------+-----------+--------+-------------------------+---------------+
+             *  | key  | value              | topic        | partition | offset | timestamp               | timestampType |
+             *  +------+--------------------+--------------+-----------+--------+-------------------------+---------------+
+             *  | null |[7B 22 74 72 61 6...| transactions |         0 |  18081 | 2021 - 01 - 20 19:45:...|             0 |
+             *  +------+--------------------+--------------+-----------+--------+-------------------------+---------------+
+             */
 
             /* Criando schema pra validar o JSON que virá nas mensagens do Kafka
              * Exemplo do JSON: 
@@ -54,10 +61,27 @@ namespace StreamingDemo
 
             // Fazendo o parse do JSON pra um array ...
             df = df.WithColumn("json", FromJson(
-                                        Col("value"),
+                                        Col("value").Cast("STRING"),
                                         schema.SimpleString)
-                                    )
-                .Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
+                                    );
+
+            /* Exemplo de saída do dataframe:
+             * +----+--------------------+------------+---------+------+--------------------+-------------+--------------------+
+             * | key|               value|       topic|partition|offset|           timestamp|timestampType|                json|
+             * +----+--------------------+------------+---------+------+--------------------+-------------+--------------------+
+             * |null|[7B 22 74 72 61 6...|transactions|        0| 18083|2021-01-20 19:49:...|            0|[6, 1949-0000-000...|
+             * +----+--------------------+------------+---------+------+--------------------+-------------+--------------------+
+             */
+
+            df = df.Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
+
+            /* Exemplo de saída do dataframe:
+             * +-----------+-------------------+---------+---------+-------+--------+--------------------+
+             * |transaction|             number|      lat|      lng| amount|category|           eventTime|
+             * +-----------+-------------------+---------+---------+-------+--------+--------------------+
+             * |          8|1951-0000-0000-0001|-23.51418|-46.64638|71.1473|    pets|2021-01-20 19:51:...|
+             * +-----------+-------------------+---------+---------+-------+--------+--------------------+
+             */
 
             // Colocando um limite de 7 minutos para receber os eventos atrasados
             df = df.WithWatermark("eventTime", "7 minutes");
@@ -66,6 +90,15 @@ namespace StreamingDemo
             df = df.GroupBy(Window(Col("eventTime"), "2 minutes", "1 minutes"), Col("category"))
                 .Sum("amount").WithColumnRenamed("sum(amount)", "total")
                 .Select(Col("window.start"), Col("window.end"), Col("category"), Col("total"));
+
+            /* Exemplo de saída do dataframe:
+             * +-------------------+-------------------+--------+--------+
+             * |              start|                end|category|   total|
+             * +-------------------+-------------------+--------+--------+
+             * |2021-01-20 19:52:00|2021-01-20 19:54:00|   sport|83.88499|
+             * |2021-01-20 19:53:00|2021-01-20 19:55:00|   sport|83.88499|
+             * +-------------------+-------------------+--------+--------+
+             */
 
             // Colocando o streaming pra funcionar e gravando os dados retornados
             StreamingQuery query = df
