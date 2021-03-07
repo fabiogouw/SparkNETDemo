@@ -498,3 +498,5 @@ healthchecksdb
 MigrationBackup/
 
 # End of https://www.gitignore.io/api/java,spark,dotnetcore,visualstudio,visualstudiocode
+
+checkpointDir/

@@ -1,4 +1,6 @@
-﻿using Microsoft.Spark.Sql;
+﻿using System;
+using System.IO;
+using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Streaming;
 using Microsoft.Spark.Sql.Types;
 using static Microsoft.Spark.Sql.Functions;
@@ -15,10 +17,10 @@ namespace StreamingDemo
             // Obtém a referência ao contexto de execução do Spark
             SparkSession spark = SparkSession
                 .Builder()
-                .AppName("Credit Card Category")
+                .AppName("Category Sells")
                 .GetOrCreate();
 
-            spark.Conf().Set("spark.sql.shuffle.partitions", "1");  // sem essa configuração, cada stage ficou com 200 tasks, o que levou uns 4 minutos pra cada batch executar
+            spark.Conf().Set("spark.sql.shuffle.partitions", "2");  // número de cores do cluster
 
             // Criando um dataframe pra receber dados do Kafka
             DataFrame df = spark
@@ -83,11 +85,11 @@ namespace StreamingDemo
              * +-----------+-------------------+---------+---------+-------+--------+--------------------+
              */
 
-            // Colocando um limite de 7 minutos para receber os eventos atrasados
-            df = df.WithWatermark("eventTime", "7 minutes");
+            // Colocando um limite de 5 minutos para receber os eventos atrasados
+            df = df.WithWatermark("eventTime", "1 minute");
 
             // Somando os valores gastos, agrupando por categoria e por janelas de 2 minutos que se iniciam a cada 1 minuto
-            df = df.GroupBy(Window(Col("eventTime"), "2 minutes", "1 minutes"), Col("category"))
+            df = df.GroupBy(Window(Col("eventTime"), "30 seconds", "15 seconds"), Col("category"))
                 .Sum("amount").WithColumnRenamed("sum(amount)", "total")
                 .Select(Col("window.start"), Col("window.end"), Col("category"), Col("total"));
 
@@ -104,8 +106,9 @@ namespace StreamingDemo
             StreamingQuery query = df
                 .WriteStream()
                 .Format("console")
+                .Option("checkpointLocation", Path.Combine(Environment.CurrentDirectory, "checkpointDir"))
                 .OutputMode(OutputMode.Update)
-                //.Foreach(new MySQLForeachWriter(connectionString))    // Descomentar pra gravar em banco de dados
+                .Foreach(new MySQLForeachWriter(connectionString))    // Descomentar pra gravar em banco de dados
                 .Start();
 
             query.AwaitTermination();
