@@ -14,6 +14,7 @@ namespace BatchDemo
              * Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
              * Rodar o comando abaixo a partir da pasta inicial deste projeto:
              *   %SPARK_HOME%\bin\spark-submit 
+             *   --packages mysql:mysql-connector-java:8.0.19 
              *   --master local 
              *   --class org.apache.spark.deploy.dotnet.DotnetRunner 
              *   bin\Debug\netcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 

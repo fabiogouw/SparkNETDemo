@@ -15,6 +15,7 @@ namespace StreamingDemo
          * ou --packages org.apache.spark:spark-sql-kafka-0-10_2.12:2.4.5
          * 
          * %SPARK_HOME%\bin\spark-submit 
+         * --packages org.apache.kafka:kafka-clients:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
          * bin\Debug\netcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
@@ -25,6 +26,7 @@ namespace StreamingDemo
          * data\MLModel.zip
          * 
          * %SPARK_HOME%\bin\spark-submit 
+         * --packages org.apache.kafka:kafka-clients:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
          * bin\Debugnetcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
@@ -34,6 +36,7 @@ namespace StreamingDemo
          * localhost:9092 200
          * 
          * %SPARK_HOME%\bin\spark-submit 
+         * --packages org.apache.kafka:kafka-clients:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 
          * --master local 
          * --class org.apache.spark.deploy.dotnet.DotnetRunner 
          * bin\Debug\netcoreapp3.1\microsoft-spark-2-4_2.11-1.0.0.jar 
@@ -41,7 +44,7 @@ namespace StreamingDemo
          * bin\Debug\netcoreapp3.1\StreamingDemo.dll 
          * WindowStreamingDemo 
          * localhost:9092 
-         * "server=localhost;database=teste_spark;uid=spark_user;pwd=my-secret-password;"
+         * server=localhost;database=teste_spark;uid=spark_user;pwd=my-secret-password;
          */
         static void Main(string[] args)
         {

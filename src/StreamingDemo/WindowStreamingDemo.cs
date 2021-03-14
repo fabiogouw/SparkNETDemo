@@ -106,7 +106,7 @@ namespace StreamingDemo
             StreamingQuery query = df
                 .WriteStream()
                 .Format("console")
-                .Option("checkpointLocation", Path.Combine(Environment.CurrentDirectory, "checkpointDir"))
+                .Option("checkpointLocation", Path.Combine(Environment.CurrentDirectory, "bin/checkpointDir"))
                 .OutputMode(OutputMode.Update)
                 .Foreach(new MySQLForeachWriter(connectionString))    // Descomentar pra gravar em banco de dados
                 .Start();

@@ -18,18 +18,6 @@ docker run -d --name kafka -p 9092:9092 --link zookeeper:zookeeper --env KAFKA_A
 docker run --name mysql -p 3306:3306 -e MYSQL_ROOT_PASSWORD=my-secret -d mysql:latest
 ````
 
-### "Pegadinhas"
-
-Para poder executar corretamente, esses exemplos precisam de algumas bibliotecas para acesso ao MySQL e Kafka. Além disso, pra conseguirmos rodar o exemplo de Streaming que usa o ML.NET, vamos precisar deixar um dos seus componentes disponíveis na pasta que está apontada a variável de ambiente DOTNET_WORKER_DIR. 
-
-- Copiar mysql-connector-java-8.0.19.jar para pasta do Spark / Hadoop
-- Copiar jars para a pasta do Hadoop spark-sql-kafka-0-10_2.11-2.4.5.jar e kafka-clients-2.4.0.jar
-- Copiar a dll Microsoft.ML.DataView.dll para a pasta DOTNET_WORKER_DIR
-
-Os jars podem ser encontrados e baixados no site do Maven. A dll pode ser encontrada na pasta de binários que é gerada durante a compilação do projeto.
-
-Obs. Não vou mentir que essa é uma solução boa, mas funciona para fins de exemplo, ok?
-
 ### Banco de Dados
 
 Alguns exemplos consideram a gravação dos resultados de processamento em banco de dados MySQL. Abaixo estão os scripts para criar as duas tabelas necessárias.
@@ -59,11 +47,12 @@ Este é um exemplo que carrega um arquivo CSV contendo dados de pagamento de bene
 
 ````
 %SPARK_HOME%\bin\spark-submit \
+--packages mysql:mysql-connector-java:8.0.19 \
 --master local \
 --class org.apache.spark.deploy.dotnet.DotnetRunner \
 bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
 dotnet \
-bin\Debug\net5.0\BatchDemo.dll \
+bin\Debug\netcoreapp3.1\BatchDemo.dll \
 data\amostra.csv \
 jdbc:mysql://localhost:3306/teste_spark beneficios spark_user my-secret-password
 ````
@@ -76,11 +65,12 @@ Este é um exemplo que "ouve" mensagens de reviews de clientes para determinados 
 
 ````
 %SPARK_HOME%\bin\spark-submit \
+--packages org.apache.kafka:kafka-clients:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 \
 --master local \
 --class org.apache.spark.deploy.dotnet.DotnetRunner \
 bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
 dotnet \
-bin\Debug\net5.0\StreamingDemo.dll \
+bin\Debug\netcoreapp3.1\StreamingDemo.dll \
 MLNETStreamingDemo \
 localhost:9092 test \
 data\MLModel.zip
@@ -92,14 +82,15 @@ Este exemplo utiliza um gerador de transações de cartão de crédito para agrupar 
 
 ````
 %SPARK_HOME%\bin\spark-submit \
+--packages org.apache.kafka:kafka-clients:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 \
 --master local \
 --class org.apache.spark.deploy.dotnet.DotnetRunner \
 bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
 dotnet \
-bin\Debug\net5.0\StreamingDemo.dll \
+bin\Debug\netcoreapp3.1\StreamingDemo.dll \
 WindowStreamingDemo \
 localhost:9092 \
-"server=localhost; database=teste_spark; uid=spark_user; pwd=my-secret-password;"
+server=localhost;database=teste_spark;uid=spark_user;pwd=my-secret-password;
 ````
 
 #### Join
@@ -108,11 +99,12 @@ Este exemplo também trata um stream de transações de cartão de crédito, mas nest
 
 ````
 %SPARK_HOME%\bin\spark-submit \
+--packages org.apache.kafka:kafka-clients:2.4.0,org.apache.spark:spark-sql-kafka-0-10_2.11:2.4.5 \
 --master local \
 --class org.apache.spark.deploy.dotnet.DotnetRunner \
 bin\Debug\net5.0\microsoft-spark-2-4_2.11-1.0.0.jar \
 dotnet \
-bin\Debug\net5.0\StreamingDemo.dll \
+bin\Debug\netcoreapp3.1\StreamingDemo.dll \
 JoinStreamingDemo \
 localhost:9092 200
 ````
