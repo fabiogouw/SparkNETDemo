@@ -3,7 +3,7 @@ using System.IO;
 using Microsoft.Spark.Sql;
 using Microsoft.Spark.Sql.Streaming;
 using Microsoft.Spark.Sql.Types;
-using static Microsoft.Spark.Sql.Functions;
+using static Microsoft.Spark.Sql.Functions; // Para acessar as funções estáticas Col, RegexpReplace, etc.
 
 namespace StreamingDemo
 {
@@ -51,15 +51,15 @@ namespace StreamingDemo
              * }
              */
             var schema = new StructType(new[]
-{
-                            new StructField("transaction", new StringType()),
-                            new StructField("number", new StringType()),
-                            new StructField("lat", new DoubleType()),
-                            new StructField("lng", new DoubleType()),
-                            new StructField("amount", new DoubleType()),
-                            new StructField("category", new StringType()),
-                            new StructField("eventTime", new TimestampType())
-                        });
+                {
+                    new StructField("transaction", new StringType()),
+                    new StructField("number", new StringType()),
+                    new StructField("lat", new DoubleType()),
+                    new StructField("lng", new DoubleType()),
+                    new StructField("amount", new DoubleType()),
+                    new StructField("category", new StringType()),
+                    new StructField("eventTime", new TimestampType())
+                });
 
             // Fazendo o parse do JSON pra um array ...
             df = df.WithColumn("json", FromJson(
@@ -77,6 +77,8 @@ namespace StreamingDemo
 
             df = df.Select("json.*");  // ... e retornando todas as colunas do array como um novo dataframe
 
+            df = df.Where(Col("category").NotEqual("auto"));    // é possível filtrar informação também
+
             /* Exemplo de saída do dataframe:
              * +-----------+-------------------+---------+---------+-------+--------+--------------------+
              * |transaction|             number|      lat|      lng| amount|category|           eventTime|
@@ -85,10 +87,10 @@ namespace StreamingDemo
              * +-----------+-------------------+---------+---------+-------+--------+--------------------+
              */
 
-            // Colocando um limite de 5 minutos para receber os eventos atrasados
+            // Colocando um limite de 1 minutos para receber os eventos atrasados
             df = df.WithWatermark("eventTime", "1 minute");
 
-            // Somando os valores gastos, agrupando por categoria e por janelas de 2 minutos que se iniciam a cada 1 minuto
+            // Somando os valores gastos, agrupando por categoria e por janelas de 30 segundos que se iniciam a cada 15 segundos
             df = df.GroupBy(Window(Col("eventTime"), "30 seconds", "15 seconds"), Col("category"))
                 .Sum("amount").WithColumnRenamed("sum(amount)", "total")
                 .Select(Col("window.start"), Col("window.end"), Col("category"), Col("total"));
@@ -105,7 +107,7 @@ namespace StreamingDemo
             // Colocando o streaming pra funcionar e gravando os dados retornados
             StreamingQuery query = df
                 .WriteStream()
-                .Format("console")
+                //.Format("console")
                 .Option("checkpointLocation", Path.Combine(Environment.CurrentDirectory, "bin/checkpointDir"))
                 .OutputMode(OutputMode.Update)
                 .Foreach(new MySQLForeachWriter(connectionString))    // Descomentar pra gravar em banco de dados

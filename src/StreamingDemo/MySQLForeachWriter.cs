@@ -41,13 +41,13 @@ namespace StreamingDemo
         public void Process(Row row)
         {
             Console.WriteLine($"==> {row.Get("start")} - {row.Get("category")} - {row.Get("total")}");
-            var cmd = _connection.CreateCommand() as MySqlCommand;
+            var cmd = _connection.CreateCommand();
             cmd.CommandText = "REPLACE INTO total_transactions (window_start, window_end, category, total) VALUES (@window_start, @window_end, @category, @total);";
             cmd.Parameters.AddWithValue("@window_start", row.Get("start"));
             cmd.Parameters.AddWithValue("@window_end", row.Get("end"));
             cmd.Parameters.AddWithValue("@category", row.Get("category"));
             cmd.Parameters.AddWithValue("@total", row.Get("total"));
-            var recs = cmd.ExecuteNonQuery();            
+            cmd.ExecuteNonQuery();            
         }
     }
 }

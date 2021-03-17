@@ -38,7 +38,7 @@ namespace BatchDemo
                 .GetOrCreate();
 
             // Definindo um schema fixo, com os nomes de coluna que eu quero e seus tipos
-            StructType schema = new StructType(new[]
+            var schema = new StructType(new[]
             {
                 new StructField("MES_REFERENCIA", new StringType()),
                 new StructField("MES_COMPETENCIA", new StringType()),
@@ -112,10 +112,10 @@ namespace BatchDemo
                     .Write()
                     .Format("jdbc")
                     .Option("driver", "com.mysql.cj.jdbc.Driver")
-                    .Option("url", "jdbc:mysql://localhost:3306/teste_spark")
-                    .Option("dbtable", "beneficios")
-                    .Option("user", "spark_user")
-                    .Option("password", "my-secret-password")
+                    .Option("url", urlJdbc) // "jdbc:mysql://localhost:3306/teste_spark"
+                    .Option("dbtable", tabela)  // "beneficios"
+                    .Option("user", usuario)    // "spark_user"
+                    .Option("password", senha)  // "my-secret-password"
                     .Mode(SaveMode.Overwrite)
                     .Save();
             }
